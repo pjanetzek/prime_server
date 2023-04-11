@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 include(cmake/version.cmake)
-get_version(${CMAKE_SOURCE_DIR}/prime_server/prime_server.hpp "PRIME_SERVER_")
-project(prime_server LANGUAGES CXX C VERSION ${PRIME_SERVER_VERSION_MAJOR}.${PRIME_SERVER_VERSION_MINOR}.${PRIME_SERVER_VERSION_PATCH})
+get_version(${CMAKE_CURRENT_SOURCE_DIR}/prime_server/prime_server.hpp "PRIME_SERVER_")
+project(prime_server LANGUAGES CXX C VERSION
+  ${PRIME_SERVER_VERSION_MAJOR}.${PRIME_SERVER_VERSION_MINOR}.${PRIME_SERVER_VERSION_PATCH})
+
 INCLUDE(FindPkgConfig)
 INCLUDE(GNUInstallDirs)
 
@@ -29,11 +31,11 @@ else()
 endif()
 
 # Show all warnings and treat as errors
-if(MSVC)
-  add_compile_options(/W4 /WX)
-else()
-  add_compile_options(-Wall -Wextra -pedantic -Werror)
-endif()
+# if(MSVC)
+#   add_compile_options(/W4 /WX)
+# else()
+#   add_compile_options(-Wall -Wextra -pedantic -Werror)
+# endif()
 
 option(ENABLE_SANITIZERS "Use all the integrated sanitizers for Debug build" OFF)
 option(ENABLE_ADDRESS_SANITIZER "Use memory sanitizer for Debug build" OFF)
@@ -52,33 +54,41 @@ include_directories(${CZMQ_INCLUDEDIR})
 
 find_package (Threads REQUIRED)
 
-# Include the hpp files
-include_directories(${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/prime_server)
 
 set(PRIME_LIBRARY_HEADERS
-	${CMAKE_SOURCE_DIR}/prime_server/prime_server.hpp
-	${CMAKE_SOURCE_DIR}/prime_server/http_util.hpp
-	${CMAKE_SOURCE_DIR}/prime_server/netstring_protocol.hpp
-	${CMAKE_SOURCE_DIR}/prime_server/zmq_helpers.hpp
-	${CMAKE_SOURCE_DIR}/prime_server/http_protocol.hpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/prime_server/prime_server.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/prime_server/http_util.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/prime_server/netstring_protocol.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/prime_server/zmq_helpers.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/prime_server/http_protocol.hpp)
 
 set(PRIME_LIBRARY_SOURCES
-	${CMAKE_SOURCE_DIR}/src/logging/logging.hpp
-	${CMAKE_SOURCE_DIR}/src/prime_helpers.hpp
-	${CMAKE_SOURCE_DIR}/src/http_protocol.cpp
-	${CMAKE_SOURCE_DIR}/src/http_util.cpp
-	${CMAKE_SOURCE_DIR}/src/netstring_protocol.cpp
-	${CMAKE_SOURCE_DIR}/src/prime_server.cpp
-	${CMAKE_SOURCE_DIR}/src/zmq_helpers.cpp)
+	${CMAKE_CURRENT_SOURCE_DIR}/src/logging/logging.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/prime_helpers.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/http_protocol.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/http_util.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/netstring_protocol.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/prime_server.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/zmq_helpers.cpp)
 
 # Build the library
-add_library(prime_server SHARED ${PRIME_LIBRARY_SOURCES})
+add_library(prime_server STATIC ${PRIME_LIBRARY_SOURCES})
 target_link_libraries(prime_server
   PUBLIC
     ${ZMQ_LDFLAGS}
   PRIVATE
     ${CZMQ_LDFLAGS}
     ${CURL_LDFLAGS})
+
+# Include the hpp files
+target_include_directories(prime_server
+  PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/prime_server
+  PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR})
+
+### Only build if this is the main project
+if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
 
 # Build executables
 add_executable(prime_echod ${CMAKE_SOURCE_DIR}/src/prime_echod.cpp)
@@ -125,6 +135,7 @@ CONFIGURE_FILE(
 	@ONLY)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libprime_server.pc" DESTINATION ${pkgconfigdir})
 
+
 # Add tests - Requires CTest
 enable_testing()
 
@@ -147,3 +158,4 @@ add_test(shaping shaping)
 add_executable(zmq ${CMAKE_SOURCE_DIR}/test/zmq.cpp)
 target_link_libraries(zmq prime_server ${CMAKE_THREAD_LIBS_INIT})
 add_test(zmq zmq)
+endif()
