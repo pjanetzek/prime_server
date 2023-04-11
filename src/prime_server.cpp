@@ -36,6 +36,7 @@ struct quiescable final {
     sigset_t set;
     sigemptyset(&set);
     sigaddset(&set, SIGTERM);
+    sigaddset(&set, SIGINT);
     auto s = pthread_sigmask(SIG_BLOCK, &set, NULL);
     if (s != 0) {
       logging::ERROR("Could not mask SIGTERM, graceful shutdown disabled");
