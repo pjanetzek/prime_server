@@ -93,21 +93,27 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
 # Build executables
 add_executable(prime_echod ${CMAKE_SOURCE_DIR}/src/prime_echod.cpp)
 target_link_libraries(prime_echod prime_server ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(prime_echod PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/prime_server)
 
 add_executable(prime_filed ${CMAKE_SOURCE_DIR}/src/prime_filed.cpp)
 target_link_libraries(prime_filed prime_server ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(prime_filed PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/prime_server)
 
 add_executable(prime_httpd ${CMAKE_SOURCE_DIR}/src/prime_httpd.cpp)
 target_link_libraries(prime_httpd prime_server ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(prime_httpd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/prime_server)
 
 add_executable(prime_serverd ${CMAKE_SOURCE_DIR}/src/prime_serverd.cpp)
 target_link_libraries(prime_serverd prime_server ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(prime_serverd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/prime_server)
 
 add_executable(prime_proxyd ${CMAKE_SOURCE_DIR}/src/prime_proxyd.cpp)
 target_link_libraries(prime_proxyd prime_server ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(prime_proxyd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/prime_server)
 
 add_executable(prime_workerd ${CMAKE_SOURCE_DIR}/src/prime_workerd.cpp)
 target_link_libraries(prime_workerd prime_server ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(prime_workerd PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/prime_server)
 
 set_target_properties(prime_server PROPERTIES
 	PUBLIC_HEADER "${PRIME_LIBRARY_HEADERS}"

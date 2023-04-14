@@ -177,7 +177,7 @@ server_t<request_container_t, request_info_t>::~server_t() {
 
 template <class request_container_t, class request_info_t>
 void server_t<request_container_t, request_info_t>::serve() {
-  int poll_timeout = request_timeout * 1000;
+  int poll_timeout = 1000; // check at least each second whether to shut down
   while (!shutting_down()) {
     // check for activity on the client socket and the result socket
     // TODO: set a timeout based on session inactivity timeout or request timeout

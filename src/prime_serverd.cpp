@@ -10,9 +10,9 @@
 
 // netstrings are far easier to work with but http is a more interesting use-case
 // so we just do everthing using the http protocol here
-#include "http_protocol.hpp"
+#include "prime_server/http_protocol.hpp"
+#include "prime_server/prime_server.hpp"
 #include "prime_helpers.hpp"
-#include "prime_server.hpp"
 using namespace prime_server;
 #include "logging/logging.hpp"
 
@@ -140,33 +140,43 @@ int main(int argc, char** argv) {
   // prime computers
   std::list<std::thread> compute_worker_threads;
   for (size_t i = 0; i < worker_concurrency; ++i) {
-    compute_worker_threads.emplace_back(
-        std::bind(&worker_t::work,
-                  worker_t(context, compute_proxy_endpoint + "_downstream", "ipc:///dev/null",
-                           result_endpoint, request_interrupt,
-                           [](const std::list<zmq::message_t>& job, void* request_info,
-                              worker_t::interrupt_function_t&) {
-                             // check if its prime
-                             size_t prime = *static_cast<const size_t*>(job.front().data());
-                             size_t divisor = 2;
-                             size_t high = prime;
-                             while (divisor < high) {
-                               if (prime % divisor == 0)
-                                 break;
-                               high = prime / divisor;
-                               ++divisor;
-                             }
+    compute_worker_threads.emplace_back([&](){
+        // example for per worker context that can be used in work_function_t
+        struct prime_worker {
+          size_t make_valid(size_t prime) {
+            size_t divisor = 2;
+            size_t high = prime;
+            while (divisor < high) {
+              if (prime % divisor == 0)
+                break;
+              high = prime / divisor;
+              ++divisor;
+            }
+            // if it was prime send it back unmolested, else send back 2 which we
+            // know is prime
+            if (divisor < high)
+              prime = 2;
+            return prime;
+          }
+        };
+        prime_worker worker_context;
 
-                             // if it was prime send it back unmolested, else send back 2 which we
-                             // know is prime
-                             if (divisor < high)
-                               prime = 2;
-                             http_response_t response(200, "OK", std::to_string(prime));
-                             response.from_info(*static_cast<http_request_info_t*>(request_info));
-                             worker_t::result_t result{false, {}, {}};
-                             result.messages.emplace_back(response.to_string());
-                             return result;
-                           })));
+        worker_t worker(context, compute_proxy_endpoint + "_downstream", "ipc:///dev/null",
+                        result_endpoint, request_interrupt,
+                        [&worker_context](const std::list<zmq::message_t>& job, void* request_info,
+                                           worker_t::interrupt_function_t&) {
+                          // check if its prime
+                          size_t prime = *static_cast<const size_t*>(job.front().data());
+                          prime = worker_context.make_valid(prime);
+
+                          http_response_t response(200, "OK", std::to_string(prime));
+                          response.from_info(*static_cast<http_request_info_t*>(request_info));
+                          worker_t::result_t result{false, {}, {}};
+                          result.messages.emplace_back(response.to_string());
+                          return result;
+                        });
+        worker.work();
+    });
     compute_worker_threads.back().detach();
   }
 
